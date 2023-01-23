@@ -1,0 +1,23 @@
+#include<ams_as5048b.h>
+
+#define NUMSENS 4
+
+AMS_AS5048B sensors[NUMSENS] = {AMS_AS5048B(0X41),AMS_AS5048B(0X42),AMS_AS5048B(0X43)}; //find address of each sensor using I2C scanner
+
+void setup(){
+  Serial.begin(115200);
+  while(!serial);
+  for(int i = 0; i<NUMSENS; i++){ //initilaise each sensor
+    sensors[i].begin();
+  }
+}
+
+void loop(){
+for(int i = 0; i<NUMSENS, i++){
+  Serial.print(i); Serial.print(" sensor is used");
+  Serial.println("Angle : ");
+  Serial.println(sensors[i].angleR(U_DEG,true));  //obtaining angle from each sensor
+  }
+  Serial.println("------");
+  delay(1000);
+}
