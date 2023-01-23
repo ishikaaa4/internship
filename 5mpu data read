@@ -1,0 +1,191 @@
+#include <Wire.h>
+#include <MPU6050.h>
+#include <TCA9548A.h>
+#include <SD.h>
+#include <SPI.h>
+#include <string.h>
+
+#define TCAADDR 0X70
+
+File myFile;
+
+String s[5] = {"LA", "LF", "RA", "RF", "DOR"};
+String ax1, ay1, az1;
+int len;
+
+const int chipSelect = 53; //Mega = 53, UNO = 10
+
+MPU6050 LA;
+MPU6050 LF;
+MPU6050 DOR;
+MPU6050 RF;
+MPU6050 RA;
+
+int16_t ax,ay,az;
+int16_t gx,gy,gz;
+//const int MPUADDR=0x40;
+
+void TCA9548A(uint8_t bus)
+{
+  Wire.beginTransmission(TCAADDR);  // TCA9548A address
+  Wire.write(1 << bus);          // send byte to select bus
+  Wire.endTransmission();
+}
+
+/*void tostring(char str[], int num)
+{
+    int i, rem, len = 0, n;
+ 
+    n = num;
+    while (n != 0)
+    {
+        len++;
+        n /= 10;
+    }
+    for (i = 0; i < len; i++)
+    {
+        rem = num % 10;
+        num = num / 10;
+        str[len - (i + 1)] = rem + '0';
+    }
+    str[len] = '\0';
+}*/
+
+void printvalues(MPU6050 imu, int bus)
+{
+  TCA9548A(bus);
+  imu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    Serial.println("BUS used is: "); Serial.println(bus);
+    Serial.println("ax: "); Serial.println(ax);
+    Serial.println("ay: "); Serial.println(ay);
+    Serial.println("az: "); Serial.println(az);
+    //Serial.println("gx: "); Serial.println(gx);
+    //Serial.println("gy: "); Serial.println(gy);
+    //Serial.println("gz: "); Serial.println(gz);
+    delay(3000);
+    writedata(ax,ay,az);
+}
+
+void writedata(int ax, int ay, int az)
+{
+
+  Serial.print("inside function writing\n");
+  myFile = SD.open("test.csv", FILE_WRITE);
+  if(myFile.available())
+  {
+    Serial.print("writing\n");
+    ax1 = String(ax);
+    ay1 = String(ay);
+    az1 = String(az);  
+    
+    len = ax1.length();
+    char* char_array = new char[len + 1];  
+    strcpy(char_array, ax1.c_str());
+    myFile.write(char_array); myFile.write(",");
+        
+    len = ay1.length();
+    char_array = new char[len + 1];  
+    strcpy(char_array, ay1.c_str());
+    myFile.write(char_array); myFile.write(",");
+
+    len = az1.length();
+    char_array = new char[len + 1];  
+    strcpy(char_array, az1.c_str());
+    myFile.write(char_array); myFile.write(",");
+
+  }
+  else Serial.print("Not writing");
+  myFile.close();
+    
+}
+void setup()
+{
+  Serial.begin(9600);
+  Wire.begin();
+  LA.initialize();
+  LF.initialize();
+  DOR.initialize();
+  RA.initialize();
+  RF.initialize();
+  if (SD.begin(chipSelect))
+    {
+      Serial.println("SD card is present & ready");
+    } 
+    else
+    {
+      Serial.println("SD card missing or failure");
+      while(1); 
+    }
+  myFile = SD.open("test.csv", FILE_WRITE);
+  if (myFile.availableForWrite())
+  {
+    for (int i = 0; i < 5; ++i)
+    {
+      len = s[i].length();
+      char* char_array = new char[len + 1];  
+      strcpy(char_array, s[i].c_str());
+      myFile.write(char_array);
+      for (int j=0; j<3; ++j)
+        myFile.write(",");
+    }
+    myFile.write("\n");
+    for(int i = 0; i<5; ++i)
+      {
+        myFile.write("ax"); myFile.write(",");
+        myFile.write("ay"); myFile.write(",");
+        myFile.write("az"); myFile.write(",");        
+      } 
+    myFile.write("\n");
+    myFile.close();
+  }
+  else{
+
+    Serial.print("not av for writing\n");
+    Serial.println("Not writing");
+
+  }
+
+
+  /*TCA9548A(7);
+  if (!LA.testConnection()) {
+    Serial.println("Could not find a valid MPU6050 at 7!");
+    while (1);
+  }
+  Serial.println();
+  
+  TCA9548A(6);
+  if (!LF.testConnection()) {
+    Serial.println("Could not find a valid MPU6050 at 6!");
+    while (1);
+  }
+  Serial.println();
+  
+  TCA9548A(5);
+  if (!DOR.testConnection()) {
+    Serial.println("Could not find a valid MPU6050 at 5!");
+    while (1);
+  }
+  Serial.println();
+  
+  TCA9548A(4);
+  if (!RF.testConnection()) {
+    Serial.println("Could not find a valid MPU6050 at 4!");
+    while (1);
+  }
+  Serial.println();*/
+}
+
+void loop()
+{  
+
+  int x=10;
+  while(x--)
+{  
+  printvalues(LA, 7);
+  printvalues(LF, 6);
+  printvalues(RA, 5);
+  printvalues(RF, 4);
+  myFile.write("\n");
+}
+  //printvalues(DOR, 3);
+}
